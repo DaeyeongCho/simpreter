@@ -12,7 +12,7 @@
 
 ## 배포 정보
 
-github: 
+[github 바로가기](https://github.com/DaeyeongCho/simpreter)
 
 
 # 시작 가이드
