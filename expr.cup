@@ -1,0 +1,108 @@
+import java_cup.runtime.*;
+import java.util.HashMap;
+
+parser code 
+{:
+    HashMap<String, Integer> variables = new HashMap<>();
+:}
+
+terminal PLUS, MINUS, TIMES, DIVIDE, MOD;
+terminal Integer INT;
+terminal LPAREN, RPAREN;
+terminal String ID;
+terminal DEFINE, IF, COMMA, SWITCH, CASE;
+terminal LT, GT, LE, GE;
+
+non terminal stmt_list, stmt;
+non terminal Object exp, cases;
+non terminal Boolean cond; 
+
+precedence left PLUS, MINUS;
+precedence left TIMES, DIVIDE, MOD;
+precedence nonassoc LT, GT, LE, GE;
+
+
+
+start with stmt_list;
+
+stmt_list ::= 
+    | stmt_list stmt;
+
+stmt ::=
+    DEFINE ID:id INT:value
+    {:
+        parser.variables.put(id, value);
+        System.out.println("defined " + id + " is " + value);
+    :}
+    | exp:e
+    {:
+        System.out.println(e);
+    :}
+    | IF cond:c COMMA exp:e1 COMMA exp:e2
+    {:
+        RESULT = c ? (Integer)e1 : (Integer)e2; 
+        System.out.println(RESULT);
+    :}
+    | SWITCH cases:cs 
+    {:
+        if (cs == null) {
+            System.out.println("None");
+        } else {
+            System.out.println(cs);
+        }
+    :}
+;
+
+exp ::=
+    INT:i
+    {: RESULT = i; :}
+    | ID:id
+    {:
+        Integer value = parser.variables.get(id);
+        if (value == null) {
+            throw new IllegalArgumentException("Undefined variable: " + id);
+        }
+        RESULT = value;
+    :}
+    | exp:e1 PLUS exp:e2
+    {: RESULT = ((Integer)e1) + ((Integer)e2); :}
+    | exp:e1 MINUS exp:e2
+    {: RESULT = ((Integer)e1) - ((Integer)e2); :}
+    | exp:e1 TIMES exp:e2
+    {: RESULT = ((Integer)e1) * ((Integer)e2); :}
+    | exp:e1 DIVIDE exp:e2
+    {:
+        if (((Integer) e2) == 0) {
+            throw new ArithmeticException("Division by zero");
+        }
+        RESULT = ((Integer)e1) / ((Integer)e2);
+    :}
+    | exp:e1 MOD exp:e2
+    {:
+        if (((Integer) e2) == 0) {
+            throw new ArithmeticException("Modulo by zero");
+        }
+        RESULT = ((Integer)e1) % ((Integer)e2);
+    :}
+    | MINUS exp:e  
+    {: RESULT = -((Integer)e); :}
+    | PLUS exp:e
+    {: RESULT = (Integer)e; :}
+    | LPAREN exp:e RPAREN
+    {: RESULT = e; :}
+;
+
+cond ::=
+    exp:e1 LT exp:e2 {: RESULT = ((Integer) e1) < ((Integer) e2); :}
+    | exp:e1 GT exp:e2 {: RESULT = ((Integer) e1) > ((Integer) e2); :}
+    | exp:e1 LE exp:e2 {: RESULT = ((Integer) e1) <= ((Integer) e2); :}
+    | exp:e1 GE exp:e2 {: RESULT = ((Integer) e1) >= ((Integer) e2); :}
+    | exp:e {: RESULT = ((Integer) e) != 0; :} 
+;
+
+cases ::=
+    CASE cond:c COMMA exp:e
+    {: RESULT = c ? (Integer)e : null; :}
+    | cases:cs CASE cond:c COMMA exp:e
+    {: RESULT = cs != null ? cs : (c ? (Integer)e : null); :}
+;
